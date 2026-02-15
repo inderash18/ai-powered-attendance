@@ -15,7 +15,23 @@ export default function Monitoring() {
     const videoRef = useRef(null);
     const [isActive, setIsActive] = useState(false);
     const [detections, setDetections] = useState([]);
+    const [logs, setLogs] = useState([]);
     const canvasRef = useRef(null);
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                const res = await fetch("http://127.0.0.1:8000/api/v1/attendance/logs");
+                const data = await res.json();
+                setLogs(data);
+            } catch (err) {
+                console.error("Log fetch error:", err);
+            }
+        };
+        fetchLogs();
+        const interval = setInterval(fetchLogs, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         let interval;
@@ -137,24 +153,52 @@ export default function Monitoring() {
                 </div>
 
                 <div className="flex flex-col gap-6 overflow-hidden">
-                    <Card className="flex-1 flex flex-col min-h-0" title="Active Detections">
-                        <div className="flex-1 overflow-y-auto space-y-4 pr-2 custom-scrollbar">
-                            {detections.length > 0 ? detections.map((studentId, i) => (
-                                <div key={i} className="flex items-center gap-3 p-3 hover:bg-[#f9fafb] rounded-xl transition-colors cursor-default">
-                                    <div className="w-9 h-9 rounded-full bg-[#eff8ff] flex items-center justify-center text-[var(--primary)] font-bold text-xs border border-[#b2ddff]">
-                                        {studentId.charAt(0).toUpperCase()}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-xs font-bold text-[var(--foreground)] truncate">{studentId}</p>
-                                        <p className="text-[10px] text-[var(--secondary)]">ID_VERIFIED</p>
-                                    </div>
-                                    <Badge status="success">LIVE</Badge>
+                    <Card className="flex-1 flex flex-col min-h-0" title="Neural Monitoring">
+                        <div className="flex-1 overflow-y-auto space-y-6 pr-2 custom-scrollbar">
+                            {/* Live Section */}
+                            <div>
+                                <h3 className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] mb-4">Current Feed_01</h3>
+                                <div className="space-y-3">
+                                    {isActive && detections.length > 0 ? detections.map((studentId, i) => (
+                                        <div key={i} className="flex items-center gap-3 p-3 bg-[#f0f9ff] border border-[#b2ddff] rounded-xl transition-colors cursor-default">
+                                            <div className="w-8 h-8 rounded-full bg-[#eff8ff] flex items-center justify-center text-[var(--primary)] font-bold text-[10px] border border-[#b2ddff]">
+                                                {studentId.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[11px] font-bold text-[var(--foreground)] truncate">{studentId}</p>
+                                                <p className="text-[9px] text-[var(--primary)] font-bold">MATCHED</p>
+                                            </div>
+                                            <Badge status="success">LIVE</Badge>
+                                        </div>
+                                    )) : (
+                                        <p className="text-[10px] text-[var(--secondary)] text-center py-4 border border-dashed border-[var(--border)] rounded-xl uppercase tracking-widest">
+                                            {isActive ? 'Scanning for identities...' : 'Stream inactive'}
+                                        </p>
+                                    )}
                                 </div>
-                            )) : (
-                                <p className="text-xs text-[var(--secondary)] text-center mt-10">No active detections</p>
-                            )}
+                            </div>
+
+                            {/* History Section */}
+                            <div>
+                                <h3 className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] mb-4">Recent Node Events</h3>
+                                <div className="space-y-3">
+                                    {logs.slice(0, 5).map((log, idx) => (
+                                        <div key={idx} className="flex items-center gap-3 p-2 hover:bg-[#f9fafb] rounded-lg transition-all opacity-80 hover:opacity-100">
+                                            <div className="w-7 h-7 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500 font-bold text-[9px]">
+                                                {log.student_id?.charAt(0)}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-[10px] font-bold text-slate-700 truncate">{log.student_id}</p>
+                                                <p className="text-[8px] text-slate-400">{new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</p>
+                                            </div>
+                                            <div className={`w-1.5 h-1.5 rounded-full ${log.engagement_score > 75 ? 'bg-emerald-400' : 'bg-rose-400'}`} />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
                         </div>
                     </Card>
+
 
                     <Card className="bg-[#fef3f2] border-[#fda29b] p-4">
                         <div className="flex gap-3">
