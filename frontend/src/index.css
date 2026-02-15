@@ -1,0 +1,88 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+:root {
+  --background: #fcfcfd;
+  --foreground: #101828;
+  --border: #eaecf0;
+  --primary: #444ce7;
+  --secondary: #667085;
+  --success: #079455;
+  --warning: #f79009;
+  --error: #d92d20;
+  --surface: #ffffff;
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--background)] text-[var(--foreground)] antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+}
+
+@layer components {
+  .card {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    /* 12px */
+    box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+  }
+
+  .btn-primary {
+    @apply px-4 py-2 text-white rounded-lg font-semibold transition-all border;
+    background-color: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+  }
+
+  .btn-primary:hover {
+    background-color: #3538cd;
+  }
+
+  .btn-outline {
+    @apply px-4 py-2 text-[var(--foreground)] border border-[var(--border)] rounded-lg font-semibold transition-all;
+    background-color: #ffffff;
+    box-shadow: 0px 1px 2px rgba(16, 24, 40, 0.05);
+  }
+
+  .btn-outline:hover {
+    background-color: #f9fafb;
+  }
+
+  .badge {
+    @apply px-2 py-0.5 rounded-full text-xs font-medium border;
+  }
+}
+
+/* Custom spacing for 8px grid */
+.p-space {
+  padding: 24px;
+}
+
+.m-space {
+  margin: 24px;
+}
+
+.gap-space {
+  gap: 24px;
+}
+
+/* Custom Scrollbar for Enterprise Feel */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #eaecf0;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #d0d5dd;
+}
