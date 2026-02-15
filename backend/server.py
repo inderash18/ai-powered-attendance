@@ -159,5 +159,29 @@ async def get_overview():
         print(f"Analytics error: {str(e)}")
         return {"error": str(e), "total_students": 0, "avg_engagement": 0, "today_attendance": 0}
 
+@app.get("/api/v1/students")
+async def list_students():
+    try:
+        students_cursor = db.students.find({}, {"_id": 0, "face_encoding": 0})
+        students = await students_cursor.to_list(100)
+        return students
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/attendance/logs")
+async def list_attendance_logs():
+    try:
+        logs_cursor = db.attendance.find({}, {"_id": 0}).sort("timestamp", -1).limit(50)
+        logs = await logs_cursor.to_list(50)
+        # Convert datetime to string for JSON serialization
+        results = []
+        for log in logs:
+            if isinstance(log.get("timestamp"), datetime):
+                log["timestamp"] = log["timestamp"].isoformat()
+            results.append(log)
+        return results
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

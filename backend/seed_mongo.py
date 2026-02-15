@@ -1,35 +1,53 @@
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import datetime
+import random
 
 async def seed_data():
     uri = "mongodb://localhost:27017"
     client = AsyncIOMotorClient(uri)
     db = client['attendance_app']
     
-    print("🌱 Seeding a test student...")
+    print("🌱 Clearing existing data...")
+    await db.students.delete_many({})
+    await db.attendance.delete_many({})
     
-    test_student = {
-        "student_id": "TEST-001",
-        "name": "Diagnostic Student",
-        "face_encoding": [0.0] * 128
-    }
+    students = [
+        {"student_id": "STU-001", "name": "Aiden Marcus", "face_encoding": [random.uniform(-1, 1) for _ in range(128)]},
+        {"student_id": "STU-002", "name": "Zoe Vance", "face_encoding": [random.uniform(-1, 1) for _ in range(128)]},
+        {"student_id": "STU-003", "name": "Liam Thorne", "face_encoding": [random.uniform(-1, 1) for _ in range(128)]},
+        {"student_id": "STU-004", "name": "Sophia Chen", "face_encoding": [random.uniform(-1, 1) for _ in range(128)]},
+        {"student_id": "STU-005", "name": "James Miller", "face_encoding": [random.uniform(-1, 1) for _ in range(128)]}
+    ]
     
-    await db.students.update_one(
-        {"student_id": "TEST-001"},
-        {"$set": test_student},
-        upsert=True
-    )
+    print(f"🌱 Seeding {len(students)} students...")
+    await db.students.insert_many(students)
     
-    await db.attendance.insert_one({
-        "student_id": "TEST-001",
-        "timestamp": datetime.datetime.now(),
-        "engagement_score": 95.0,
-        "is_present": True
-    })
+    print("🌱 Seeding attendance history (last 7 days)...")
+    logs = []
+    now = datetime.datetime.now()
+    for i in range(7): # 7 days
+        day = now - datetime.timedelta(days=i)
+        # Randomly choose 2-4 students present each day
+        present_count = random.randint(2, 5)
+        picked_students = random.sample(students, present_count)
+        
+        for s in picked_students:
+            # 2 check-ins per day per student
+            for _ in range(random.randint(1, 3)):
+                logs.append({
+                    "student_id": s["student_id"],
+                    "timestamp": day - datetime.timedelta(hours=random.randint(1, 8)),
+                    "engagement_score": round(random.uniform(60, 100), 2),
+                    "is_present": True
+                })
     
-    print("✅ Seed complete! database 'attendance_app' and collections 'students' and 'attendance' should now be visible in MongoDB Compass.")
-    print("Please refresh Compass (press the refresh icon or F5).")
+    await db.attendance.insert_many(logs)
+    
+    print("✅ Seed complete!")
+    print(f" - Students: {len(students)}")
+    print(f" - Logs: {len(logs)}")
+    print("\nDatabase is now fully dynamic and runtime-ready!")
 
 if __name__ == "__main__":
     asyncio.run(seed_data())

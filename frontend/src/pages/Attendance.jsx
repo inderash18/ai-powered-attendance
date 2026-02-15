@@ -6,8 +6,23 @@ export default function Attendance() {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const [isActive, setIsActive] = useState(false);
-    const [recognizedStudents, setRecognizedStudents] = useState([]);
-    const [scanStatus, setScanStatus] = useState('idle'); // idle, scanning, matched
+    const [logs, setLogs] = useState([]);
+    const [scanStatus, setScanStatus] = useState('idle');
+
+    useEffect(() => {
+        const fetchLogs = async () => {
+            try {
+                const res = await fetch("http://127.0.0.1:8000/api/v1/attendance/logs");
+                const data = await res.json();
+                setLogs(data);
+            } catch (err) {
+                console.error("Log fetch error:", err);
+            }
+        };
+        fetchLogs();
+        const interval = setInterval(fetchLogs, 5000);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         let interval;
@@ -23,7 +38,7 @@ export default function Attendance() {
 
     const startCamera = async () => {
         try {
-            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1920, height: 1080 } });
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
             if (videoRef.current) videoRef.current.srcObject = stream;
         } catch (err) {
             setIsActive(false);
@@ -38,13 +53,37 @@ export default function Attendance() {
 
     const processFrame = async () => {
         const video = videoRef.current;
-        if (!video || video.paused) return;
+        if (!video || video.paused || !isActive) return;
 
         setScanStatus('scanning');
 
-        // Process logic here...
-        // (Simplified for visual update)
-        setTimeout(() => setScanStatus('idle'), 500);
+        const canvas = canvasRef.current;
+        const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        canvas.toBlob(async (blob) => {
+            const formData = new FormData();
+            formData.append('image', blob, 'frame.jpg');
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/api/v1/attendance/process-frame', {
+                    method: 'POST',
+                    body: formData,
+                });
+                const data = await response.json();
+                if (data.count > 0) {
+                    setScanStatus('matched');
+                    setTimeout(() => setScanStatus('idle'), 1000);
+                } else {
+                    setTimeout(() => setScanStatus('idle'), 500);
+                }
+            } catch (error) {
+                console.error('Processing error:', error);
+                setScanStatus('idle');
+            }
+        }, 'image/jpeg');
     };
 
     return (
@@ -152,11 +191,21 @@ export default function Attendance() {
                             Activity Log
                         </h3>
 
-                        <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
-                            <LogEntry name="Aiden Marcus" id="ID_2042" status="Engaged" time="Just Now" />
-                            <LogEntry name="Sarah Chen" id="ID_9921" status="Distracted" time="2m ago" alert />
-                            <LogEntry name="Elena Rodriguez" id="ID_8832" status="Engaged" time="5m ago" />
-                            <LogEntry name="Marcus Thorne" id="ID_1102" status="Engaged" time="12m ago" />
+                        <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar whitespace-nowrap">
+                            {logs.length > 0 ? logs.map((log, idx) => (
+                                <LogEntry
+                                    key={idx}
+                                    name={log.student_id} // Ideally we'd join with name, but student_id is available
+                                    id={log.student_id}
+                                    status={log.engagement_score > 75 ? "Engaged" : "At Risk"}
+                                    time={new Date(log.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    alert={log.engagement_score <= 75}
+                                />
+                            )) : (
+                                <p className="text-[10px] text-slate-500 text-center py-10 uppercase tracking-widest font-bold">
+                                    Awaiting active biometric stream...
+                                </p>
+                            )}
                         </div>
                     </div>
 

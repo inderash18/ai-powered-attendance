@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Badge, Button } from '../components/ui';
 import {
     Plus,
@@ -12,13 +12,23 @@ import {
 } from 'lucide-react';
 
 export default function Students() {
-    const [students] = useState([
-        { id: 'STU001', name: 'Aiden Marcus', class: 'CS101-A', email: 'aiden@univ.edu', enrollment: '2023', status: 'Active' },
-        { id: 'STU002', name: 'Zoe Vance', class: 'CS101-B', email: 'zoe@univ.edu', enrollment: '2023', status: 'Active' },
-        { id: 'STU003', name: 'Liam Thorne', class: 'ENG204', email: 'liam@univ.edu', enrollment: '2024', status: 'Risk' },
-        { id: 'STU004', name: 'Sophia Chen', class: 'MAT102', email: 'sophia@univ.edu', enrollment: '2024', status: 'Active' },
-        { id: 'STU005', name: 'James Miller', class: 'PHY101', email: 'james@univ.edu', enrollment: '2023', status: 'Inactive' },
-    ]);
+    const [students, setStudents] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStudents = async () => {
+            try {
+                const res = await fetch("http://127.0.0.1:8000/api/v1/students");
+                const data = await res.json();
+                setStudents(data);
+            } catch (err) {
+                console.error("Failed to fetch students:", err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchStudents();
+    }, []);
 
     return (
         <div className="p-space max-w-[1400px] mx-auto">
@@ -69,27 +79,27 @@ export default function Students() {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#eaecf0]">
-                            {students.map((student, i) => (
+                            {students.length > 0 ? students.map((student, i) => (
                                 <tr key={i} className="group hover:bg-[#f9fafb] transition-colors">
                                     <td className="py-4">
                                         <div className="flex items-center gap-3">
                                             <div className="w-10 h-10 rounded-xl bg-[#f2f4f7] border border-[#eaecf0] flex items-center justify-center font-bold text-xs text-[#344054]">
-                                                {student.name.charAt(0)}
+                                                {student.name?.charAt(0) || '?'}
                                             </div>
                                             <div>
                                                 <p className="text-sm font-bold text-[var(--foreground)]">{student.name}</p>
-                                                <p className="text-[10px] font-medium text-[var(--secondary)]">{student.id}</p>
+                                                <p className="text-[10px] font-medium text-[var(--secondary)]">{student.student_id}</p>
                                             </div>
                                         </div>
                                     </td>
                                     <td className="py-4">
-                                        <p className="text-sm font-medium text-[var(--secondary)]">{student.class}</p>
-                                        <p className="text-[10px] text-[#98a2b3]">Enrollment: {student.enrollment}</p>
+                                        <p className="text-sm font-medium text-[var(--secondary)]">{student.class || 'General'}</p>
+                                        <p className="text-[10px] text-[#98a2b3]">Enrollment: {student.enrollment || '2024'}</p>
                                     </td>
-                                    <td className="py-4 text-sm font-medium text-[var(--secondary)]">{student.email}</td>
+                                    <td className="py-4 text-sm font-medium text-[var(--secondary)]">{student.email || `${student.student_id?.toLowerCase()}@univ.edu`}</td>
                                     <td className="py-4">
-                                        <Badge status={student.status === 'Active' ? 'success' : student.status === 'Risk' ? 'error' : 'default'}>
-                                            {student.status}
+                                        <Badge status={student.status === 'Active' ? 'success' : student.status === 'Risk' ? 'error' : 'success'}>
+                                            {student.status || 'Active'}
                                         </Badge>
                                     </td>
                                     <td className="py-4 text-right">
@@ -100,7 +110,13 @@ export default function Students() {
                                         </div>
                                     </td>
                                 </tr>
-                            ))}
+                            )) : (
+                                <tr>
+                                    <td colSpan="5" className="py-10 text-center text-[var(--secondary)] text-sm">
+                                        {isLoading ? 'Loading students...' : 'No students registered in the database.'}
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
