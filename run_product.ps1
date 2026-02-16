@@ -4,7 +4,7 @@ Write-Host "Starting SmartView AI Setup..."
 
 # 1. Backend Setup
 Write-Host "Setting up Backend..."
-$backendPath = "i:\vac\backend"
+$backendPath = "i:\ai-powered-attendance\backend"
 Set-Location $backendPath
 if (-not (Test-Path "venv")) {
     Write-Host "Creating virtual environment..."
@@ -12,11 +12,11 @@ if (-not (Test-Path "venv")) {
 }
 & ".\venv\Scripts\activate.ps1"
 python -m pip install --upgrade pip
-python -m pip install -r requirements_simple.txt
+python -m pip install -r requirements_enterprise.txt
 
 # 2. Frontend Setup
 Write-Host "Setting up Frontend..."
-$frontendPath = "i:\vac\frontend"
+$frontendPath = "i:\ai-powered-attendance\frontend"
 Set-Location $frontendPath
 npm install
 

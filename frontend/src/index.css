@@ -2,6 +2,12 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 
+/*
+  NOTE: This file contains legacy styles.
+  The primary design system is located in src/styles/design-system.css
+  and is imported in main.jsx.
+*/
+
 :root {
   --background: #fcfcfd;
   --foreground: #101828;
@@ -22,6 +28,8 @@
 }
 
 @layer components {
+
+  /* Legacy classes compatibility */
   .card {
     background-color: var(--surface);
     border: 1px solid var(--border);

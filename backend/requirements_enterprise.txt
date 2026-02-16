@@ -1,0 +1,50 @@
+# SmartView AI - Enterprise Edition Requirements
+# Python 3.10+
+
+# Core Framework
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+python-multipart==0.0.12
+pydantic==2.9.2
+pydantic-settings==2.6.1
+
+# Database
+motor==3.6.0
+pymongo==4.9.1
+
+# Computer Vision & AI
+opencv-contrib-python==4.10.0.84
+numpy==1.26.4
+mediapipe==0.10.11
+face-recognition==1.3.0
+dlib==19.24.6
+
+# Advanced AI Features
+deepface==0.0.93
+tensorflow==2.18.0
+keras==3.8.0
+tf-keras==2.18.0
+
+# Analytics & ML
+scipy==1.14.1
+scikit-learn==1.5.2
+pandas==2.2.3
+
+# Generative AI
+requests==2.32.3
+
+# Utilities
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+python-dateutil==2.9.0
+pillow==11.0.0
+
+# Performance
+redis==5.2.0
+celery==5.4.0
+
+# Development
+pytest==8.3.4
+pytest-asyncio==0.24.0
+black==24.10.0
+flake8==7.1.1

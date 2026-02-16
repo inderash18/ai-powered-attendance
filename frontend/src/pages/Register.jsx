@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Card, Button } from '../components/ui';
+import { EnterpriseCard, Button, Input } from '../components/enterprise';
 import {
     Camera,
     User,
@@ -20,6 +20,7 @@ export default function Register() {
     const [capturedImage, setCapturedImage] = useState(null);
     const [status, setStatus] = useState({ type: '', message: '' });
 
+    // ... (camera logic remains same) ...
     useEffect(() => {
         if (isCapturing) {
             startCamera();
@@ -91,76 +92,54 @@ export default function Register() {
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-space">
                 {/* Registration Details */}
-                <Card title="Candidate Information" subtitle="Enter biological and institutional metadata">
+                <EnterpriseCard title="Candidate Information" subtitle="Enter biological and institutional metadata">
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[var(--secondary)] uppercase tracking-wider">Candidate Name</label>
-                                <div className="relative">
-                                    <User size={18} className="absolute left-3 top-3 text-[var(--secondary)]" />
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. Alexander Pierce"
-                                        className="w-full bg-[#f9fafb] border border-[var(--border)] rounded-lg py-2.5 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 focus:border-[var(--primary)] transition-all"
-                                        value={formData.name}
-                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            </div>
+                        <Input
+                            label="Candidate Name"
+                            placeholder="e.g. Alexander Pierce"
+                            icon={User}
+                            value={formData.name}
+                            onChange={e => setFormData({ ...formData, name: e.target.value })}
+                            required
+                        />
+                        <Input
+                            label="Institutional Identifier"
+                            placeholder="e.g. STU-2024-001"
+                            icon={IdCard}
+                            value={formData.studentId}
+                            onChange={e => setFormData({ ...formData, studentId: e.target.value })}
+                            required
+                        />
+                        <Input
+                            label="Session Classification"
+                            placeholder="e.g. CS-101 (Section A)"
+                            icon={Layers}
+                            value={formData.className}
+                            onChange={e => setFormData({ ...formData, className: e.target.value })}
+                        />
 
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[var(--secondary)] uppercase tracking-wider">Institutional Identifier</label>
-                                <div className="relative">
-                                    <IdCard size={18} className="absolute left-3 top-3 text-[var(--secondary)]" />
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. STU-2024-001"
-                                        className="w-full bg-[#f9fafb] border border-[var(--border)] rounded-lg py-2.5 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 focus:border-[var(--primary)] transition-all"
-                                        value={formData.studentId}
-                                        onChange={e => setFormData({ ...formData, studentId: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold text-[var(--secondary)] uppercase tracking-wider">Session Classification</label>
-                                <div className="relative">
-                                    <Layers size={18} className="absolute left-3 top-3 text-[var(--secondary)]" />
-                                    <input
-                                        type="text"
-                                        placeholder="e.g. CS-101 (Section A)"
-                                        className="w-full bg-[#f9fafb] border border-[var(--border)] rounded-lg py-2.5 pl-10 pr-4 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-[var(--primary)]/10 focus:border-[var(--primary)] transition-all"
-                                        value={formData.className}
-                                        onChange={e => setFormData({ ...formData, className: e.target.value })}
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <Button type="submit" className="w-full py-3 h-auto">
+                        <Button type="submit" fullWidth size="lg">
                             Verify and Enroll Identity
                         </Button>
 
                         {status.message && (
-                            <div className={`p-4 rounded-xl flex items-center gap-3 border ${status.type === 'success' ? 'bg-[#ecfdf3] text-[#067647] border-[#abefc6]' : 'bg-[#fef3f2] text-[#b42318] border-[#fda29b]'}`}>
+                            <div className={`p-4 rounded-xl flex items-center gap-3 border ${status.type === 'success' ? 'bg-success-50 text-success-700 border-success-200' : 'bg-error-50 text-error-700 border-error-200'}`}>
                                 {status.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
-                                <p className="text-xs font-semibold">{status.message}</p>
+                                <p className="text-sm font-semibold">{status.message}</p>
                             </div>
                         )}
                     </form>
-                </Card>
+                </EnterpriseCard>
 
                 {/* Biometric Integration */}
-                <Card title="Biometric Confirmation" subtitle="Visual identification capture required">
-                    <div className="aspect-video bg-[#0c0c0e] rounded-xl overflow-hidden relative border border-[var(--border)] group">
+                <EnterpriseCard title="Biometric Confirmation" subtitle="Visual identification capture required">
+                    <div className="aspect-video bg-neutral-900 rounded-xl overflow-hidden relative border border-neutral-700 group">
                         {isCapturing ? (
                             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
                         ) : capturedImage ? (
                             <img src={capturedImage} alt="Capture" className="w-full h-full object-cover" />
                         ) : (
-                            <div className="w-full h-full flex flex-col items-center justify-center text-[var(--secondary)] gap-4">
+                            <div className="w-full h-full flex flex-col items-center justify-center text-neutral-500 gap-4">
                                 <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
                                     <Camera size={24} strokeWidth={1.5} />
                                 </div>
@@ -190,16 +169,16 @@ export default function Register() {
                         )}
                     </div>
 
-                    <div className="mt-6 p-4 bg-[#f9fafb] rounded-xl border border-[var(--border)]">
+                    <div className="mt-6 p-4 bg-primary-50 rounded-xl border border-primary-100">
                         <div className="flex items-center gap-3">
-                            <ShieldCheck className="text-[var(--primary)]" size={18} />
+                            <ShieldCheck className="text-primary-600" size={18} />
                             <div className="flex-1">
-                                <p className="text-[10px] font-black text-[var(--foreground)] uppercase tracking-tight">Security Protocol</p>
-                                <p className="text-[10px] text-[var(--secondary)] leading-tight">All captured biometric data remains within institutional local nodes. No cloud egress detected.</p>
+                                <p className="text-[10px] font-black text-neutral-900 uppercase tracking-tight">Security Protocol</p>
+                                <p className="text-[10px] text-neutral-600 leading-tight">All captured biometric data remains within institutional local nodes. No cloud egress detected.</p>
                             </div>
                         </div>
                     </div>
-                </Card>
+                </EnterpriseCard>
             </div>
         </div>
     );

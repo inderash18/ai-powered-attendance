@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Card, Badge, Button } from '../components/ui';
+import { EnterpriseCard, Badge, Button } from '../components/enterprise';
 import {
     Camera,
     Activity,
@@ -18,6 +18,7 @@ export default function Monitoring() {
     const [logs, setLogs] = useState([]);
     const canvasRef = useRef(null);
 
+    // ... (useEffect for fetchLogs remains same) ...
     useEffect(() => {
         const fetchLogs = async () => {
             try {
@@ -70,13 +71,18 @@ export default function Monitoring() {
                 body: fd
             });
             const data = await res.json();
-            if (data.recognized_students) {
-                setDetections(data.recognized_students);
+            if (data.details) {
+                setDetections(data.details);
+            } else if (data.recognized_students) {
+                // Fallback if details missing
+                setDetections(data.recognized_students.map(id => ({ student_id: id, emotion: 'neutral', score: 0 })));
             }
         } catch (err) {
             console.error("Frame processing error:", err);
         }
     };
+
+    // ... (startCamera, stopCamera remain same) ...
     const startCamera = async () => {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { width: 1280, height: 720 } });
@@ -92,6 +98,7 @@ export default function Monitoring() {
             videoRef.current.srcObject.getTracks().forEach(track => track.stop());
         }
     };
+
     return (
         <div className="p-space max-w-[1400px] mx-auto h-full flex flex-col">
             <header className="mb-8 flex justify-between items-end">
@@ -103,7 +110,7 @@ export default function Monitoring() {
                     <Button variant="outline"><Settings2 size={16} /></Button>
                     <Button
                         onClick={() => setIsActive(!isActive)}
-                        className={isActive ? 'bg-white text-[var(--error)] border-[var(--error)] hover:bg-[#fef3f2]' : ''}
+                        className={isActive ? 'bg-white text-error-600 border-error-200 hover:bg-error-50' : ''}
                     >
                         {isActive ? 'Terminate Stream' : 'Initialize Monitoring'}
                     </Button>
@@ -112,7 +119,7 @@ export default function Monitoring() {
 
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 flex-1 min-h-0">
                 <div className="lg:col-span-3 flex flex-col gap-6">
-                    <Card className="flex-1 min-h-[400px] relative bg-black flex items-center justify-center group overflow-hidden border-none rounded-2xl shadow-2xl">
+                    <EnterpriseCard className="flex-1 min-h-[400px] relative bg-black flex items-center justify-center group overflow-hidden border-none rounded-2xl shadow-2xl">
                         {isActive ? (
                             <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover opacity-90" />
                         ) : (
@@ -129,7 +136,7 @@ export default function Monitoring() {
                             <div className="absolute inset-0 p-8 pointer-events-none flex flex-col justify-between">
                                 <div className="flex justify-between items-start">
                                     <div className="px-3 py-1.5 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 flex items-center gap-2">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-[var(--error)] animate-pulse" />
+                                        <div className="w-1.5 h-1.5 rounded-full bg-error-500 animate-pulse" />
                                         <span className="text-[10px] font-bold text-white uppercase tracking-wider">SECURE FEED_01</span>
                                     </div>
                                     <button className="p-2 bg-black/40 backdrop-blur-md rounded-lg border border-white/10 text-white hover:bg-black/60 transition-colors pointer-events-auto">
@@ -143,7 +150,7 @@ export default function Monitoring() {
                                 </div>
                             </div>
                         )}
-                    </Card>
+                    </EnterpriseCard>
 
                     <div className="grid grid-cols-3 gap-6">
                         <StatSmall label="Gaze Analysis" value="84.2%" status="Optimal" />
@@ -153,25 +160,28 @@ export default function Monitoring() {
                 </div>
 
                 <div className="flex flex-col gap-6 overflow-hidden">
-                    <Card className="flex-1 flex flex-col min-h-0" title="Neural Monitoring">
+                    <EnterpriseCard className="flex-1 flex flex-col min-h-0" title="Neural Monitoring">
                         <div className="flex-1 overflow-y-auto space-y-6 pr-2 custom-scrollbar">
                             {/* Live Section */}
                             <div>
                                 <h3 className="text-[10px] font-black text-[var(--secondary)] uppercase tracking-[0.2em] mb-4">Current Feed_01</h3>
                                 <div className="space-y-3">
-                                    {isActive && detections.length > 0 ? detections.map((studentId, i) => (
-                                        <div key={i} className="flex items-center gap-3 p-3 bg-[#f0f9ff] border border-[#b2ddff] rounded-xl transition-colors cursor-default">
-                                            <div className="w-8 h-8 rounded-full bg-[#eff8ff] flex items-center justify-center text-[var(--primary)] font-bold text-[10px] border border-[#b2ddff]">
-                                                {studentId.charAt(0).toUpperCase()}
+                                    {isActive && detections.length > 0 ? detections.map((det, i) => (
+                                        <div key={i} className="flex items-center gap-3 p-3 bg-primary-50 border border-primary-100 rounded-xl transition-colors cursor-default">
+                                            <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-primary-600 font-bold text-[10px] border border-primary-200">
+                                                {det.student_id ? det.student_id.charAt(0).toUpperCase() : '?'}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-[11px] font-bold text-[var(--foreground)] truncate">{studentId}</p>
-                                                <p className="text-[9px] text-[var(--primary)] font-bold">MATCHED</p>
+                                                <p className="text-[11px] font-bold text-neutral-900 truncate">{det.student_id}</p>
+                                                <div className="flex gap-2">
+                                                    <p className="text-[9px] text-primary-600 font-bold">MATCHED</p>
+                                                    {det.emotion && <p className="text-[9px] text-neutral-500 font-bold uppercase">{det.emotion}</p>}
+                                                </div>
                                             </div>
-                                            <Badge status="success">LIVE</Badge>
+                                            <Badge variant="success" dot>LIVE</Badge>
                                         </div>
                                     )) : (
-                                        <p className="text-[10px] text-[var(--secondary)] text-center py-4 border border-dashed border-[var(--border)] rounded-xl uppercase tracking-widest">
+                                        <p className="text-[10px] text-neutral-400 text-center py-4 border border-dashed border-neutral-200 rounded-xl uppercase tracking-widest">
                                             {isActive ? 'Scanning for identities...' : 'Stream inactive'}
                                         </p>
                                     )}
@@ -197,18 +207,18 @@ export default function Monitoring() {
                                 </div>
                             </div>
                         </div>
-                    </Card>
+                    </EnterpriseCard>
 
 
-                    <Card className="bg-[#fef3f2] border-[#fda29b] p-4">
+                    <EnterpriseCard className="bg-error-50 border-error-200 p-4">
                         <div className="flex gap-3">
-                            <AlertTriangle className="text-[#d92d20]" size={18} />
+                            <AlertTriangle className="text-error-600" size={18} />
                             <div>
-                                <p className="text-xs font-bold text-[#d92d20] uppercase tracking-wider">System Alert</p>
-                                <p className="text-[#b42318] text-xs font-medium mt-0.5 leading-relaxed">2 anomalies detected in rear sector. Engagement metrics dropping.</p>
+                                <p className="text-xs font-bold text-error-600 uppercase tracking-wider">System Alert</p>
+                                <p className="text-error-700 text-xs font-medium mt-0.5 leading-relaxed">2 anomalies detected in rear sector. Engagement metrics dropping.</p>
                             </div>
                         </div>
-                    </Card>
+                    </EnterpriseCard>
                 </div>
             </div>
         </div>
@@ -216,11 +226,11 @@ export default function Monitoring() {
 }
 
 const StatSmall = ({ label, value, status }) => (
-    <Card className="p-4">
-        <p className="text-[10px] font-bold text-[var(--secondary)] uppercase tracking-wider mb-1">{label}</p>
+    <EnterpriseCard className="p-4">
+        <p className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider mb-1">{label}</p>
         <div className="flex items-end justify-between">
-            <p className="text-2xl font-bold">{value}</p>
-            <span className="text-[10px] font-bold text-[var(--success)]">{status}</span>
+            <p className="text-2xl font-bold text-neutral-900">{value}</p>
+            <span className="text-[10px] font-bold text-success-600">{status}</span>
         </div>
-    </Card>
+    </EnterpriseCard>
 );

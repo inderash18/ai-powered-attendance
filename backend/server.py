@@ -15,6 +15,8 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from app.services.face_recog import recognize_faces, encode_face
 from app.services.engagement import engagement_detector
 from app.services.ollama_ai import generate_student_report
+from app.services.advanced_ai import emotion_engine, posture_analyzer
+from app.services.analytics_engine import engagement_scorer, predictive_analytics
 
 app = FastAPI(title="SmartView AI - MongoDB Backend")
 
@@ -102,20 +104,42 @@ async def process_frame(image: UploadFile = File(...)):
 
     # Engagement
     engagement_metrics = engagement_detector.detect_engagement(frame)
+    # Advanced AI Analysis
+    emotions = emotion_engine.analyze_emotions(frame, []) # TODO: Pass face locations if available
+    posture_data = posture_analyzer.analyze_posture(frame)
 
     # Log in DB
     results = []
     for i, student_id in enumerate(found_ids):
-        score = engagement_metrics[i]["engagement_score"] if i < len(engagement_metrics) else 100.0
+        # Base engagement score
+        base_score = engagement_metrics[i]["engagement_score"] if i < len(engagement_metrics) else 100.0
+        
+        # Comprehensive Enterprise Score
+        metrics = {
+            'eye_aspect_ratio': base_score / 100,
+            'head_pose': engagement_metrics[i].get('head_pose', 0) if i < len(engagement_metrics) else 0,
+            'emotion': emotions[i]['dominant_emotion'] if i < len(emotions) else 'neutral',
+            'posture_score': posture_data[i]['posture_score'] if i < len(posture_data) else 70,
+            'attention_duration': 10  # Placeholder for session tracking
+        }
+        comprehensive_score = engagement_scorer.calculate_comprehensive_score(metrics)
+
         timestamp = datetime.now()
         log = {
             "student_id": student_id, 
             "timestamp": timestamp, 
-            "engagement_score": score, 
+            "engagement_score": comprehensive_score,
+            "base_score": base_score,
+            "emotion": metrics['emotion'],
+            "posture_score": metrics['posture_score'],
             "is_present": True
         }
         await db.attendance.insert_one(log)
-        results.append({"student_id": student_id, "score": score})
+        results.append({
+            "student_id": student_id, 
+            "score": comprehensive_score, 
+            "emotion": metrics['emotion']
+        })
 
     return {"recognized_students": found_ids, "count": len(found_ids), "details": results}
 
@@ -182,6 +206,57 @@ async def list_attendance_logs():
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v1/students/{student_id}/risk-analysis")
+async def get_student_risk(student_id: str):
+    try:
+        logs = await db.attendance.find({"student_id": student_id}).sort("timestamp", -1).limit(30).to_list(30)
+        logs_list = []
+        for l in logs:
+            l["timestamp"] = l["timestamp"].isoformat() if isinstance(l.get("timestamp"), datetime) else l.get("timestamp")
+            logs_list.append(l)
+
+        if not logs_list:
+             return {"risk_score": 0, "level": "Unknown", "factors": []}
+
+        # Calculate metrics for prediction
+        engagement_scores = [l.get('engagement_score', 0) for l in logs_list]
+        neg_emotions = sum(1 for l in logs_list if l.get('emotion') in ['sad', 'angry', 'fear'])
+        
+        student_data = {
+            'attendance_rate': 100, # Simplified for now
+            'engagement_trend': (engagement_scores[0] - engagement_scores[-1]) if len(engagement_scores) > 1 else 0,
+            'negative_emotion_rate': neg_emotions / len(logs_list) if logs_list else 0,
+            'attendance_variance': 0.1
+        }
+        
+        analysis = predictive_analytics.calculate_dropout_risk(student_data)
+        return analysis
+    except Exception as e:
+        print(f"Risk analysis error: {str(e)}")
+        return {"error": str(e)}
+
+@app.get("/api/v1/analytics/forecast")
+async def get_engagement_forecast():
+    try:
+        pipeline = [
+            {"$group": {
+                "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$timestamp"}},
+                "avg_engagement": {"$avg": "$engagement_score"}
+            }},
+            {"$sort": {"_id": 1}},
+            {"$limit": 30}
+        ]
+        daily_data = await db.attendance.aggregate(pipeline).to_list(30)
+        historical = [d['avg_engagement'] for d in daily_data]
+        
+        if len(historical) < 3:
+             return {"forecast": [], "msg": "Insufficient data"}
+             
+        forecast = predictive_analytics.forecast_engagement(historical, periods=7)
+        return {"historical": historical, "forecast": forecast}
+    except Exception as e:
+         return {"error": str(e)}
 
 if __name__ == "__main__":
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)

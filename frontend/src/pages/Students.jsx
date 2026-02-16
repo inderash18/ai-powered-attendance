@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Badge, Button } from '../components/ui';
+import { EnterpriseCard, Badge, Button } from '../components/enterprise';
 import {
     Plus,
     Search,
@@ -13,6 +13,7 @@ import {
 
 export default function Students() {
     const [students, setStudents] = useState([]);
+    const [studentRisks, setStudentRisks] = useState({});
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
@@ -29,6 +30,25 @@ export default function Students() {
         };
         fetchStudents();
     }, []);
+
+    useEffect(() => {
+        const fetchRiskData = async () => {
+            const risks = {};
+            await Promise.all(
+                students.map(async (s) => {
+                    try {
+                        const res = await fetch(`http://127.0.0.1:8000/api/v1/students/${s.student_id}/risk-analysis`);
+                        const data = await res.json();
+                        risks[s.student_id] = data;
+                    } catch (e) {
+                        console.log("Risk fetch error", e);
+                    }
+                })
+            );
+            setStudentRisks(risks);
+        };
+        if (students.length > 0) fetchRiskData();
+    }, [students]);
 
     return (
         <div className="p-space max-w-[1400px] mx-auto">
@@ -49,7 +69,7 @@ export default function Students() {
                 </div>
             </header>
 
-            <Card>
+            <EnterpriseCard>
                 <div className="flex flex-col md:flex-row gap-4 mb-6">
                     <div className="relative flex-1 group">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--secondary)] group-focus-within:text-[var(--primary)] transition-colors" size={18} />
@@ -74,43 +94,53 @@ export default function Students() {
                                 <th className="pb-4 text-xs font-bold text-[var(--secondary)] uppercase tracking-wider">Candidate Identifier</th>
                                 <th className="pb-4 text-xs font-bold text-[var(--secondary)] uppercase tracking-wider">Academic Placement</th>
                                 <th className="pb-4 text-xs font-bold text-[var(--secondary)] uppercase tracking-wider">Institutional Email</th>
-                                <th className="pb-4 text-xs font-bold text-[var(--secondary)] uppercase tracking-wider">Audit Status</th>
+                                <th className="pb-4 text-xs font-bold text-[var(--secondary)] uppercase tracking-wider">Risk Assessment</th>
                                 <th className="pb-4 text-xs font-bold text-[var(--secondary)] uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-[#eaecf0]">
-                            {students.length > 0 ? students.map((student, i) => (
-                                <tr key={i} className="group hover:bg-[#f9fafb] transition-colors">
-                                    <td className="py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 rounded-xl bg-[#f2f4f7] border border-[#eaecf0] flex items-center justify-center font-bold text-xs text-[#344054]">
-                                                {student.name?.charAt(0) || '?'}
+                            {students.length > 0 ? students.map((student, i) => {
+                                const risk = studentRisks[student.student_id]?.risk_level || 'low';
+                                const badgeVariant = {
+                                    'low': 'success',
+                                    'moderate': 'warning',
+                                    'high': 'error',
+                                    'critical': 'error'
+                                }[risk] || 'default';
+
+                                return (
+                                    <tr key={i} className="group hover:bg-[#f9fafb] transition-colors">
+                                        <td className="py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-[#f2f4f7] border border-[#eaecf0] flex items-center justify-center font-bold text-xs text-[#344054]">
+                                                    {student.name?.charAt(0) || '?'}
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-[var(--foreground)]">{student.name}</p>
+                                                    <p className="text-[10px] font-medium text-[var(--secondary)]">{student.student_id}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="text-sm font-bold text-[var(--foreground)]">{student.name}</p>
-                                                <p className="text-[10px] font-medium text-[var(--secondary)]">{student.student_id}</p>
+                                        </td>
+                                        <td className="py-4">
+                                            <p className="text-sm font-medium text-[var(--secondary)]">{student.class || 'General'}</p>
+                                            <p className="text-[10px] text-[#98a2b3]">Enrollment: {student.enrollment || '2024'}</p>
+                                        </td>
+                                        <td className="py-4 text-sm font-medium text-[var(--secondary)]">{student.email || `${student.student_id?.toLowerCase()}@univ.edu`}</td>
+                                        <td className="py-4">
+                                            <Badge variant={badgeVariant} dot>
+                                                {risk.toUpperCase()} RISK
+                                            </Badge>
+                                        </td>
+                                        <td className="py-4 text-right">
+                                            <div className="flex justify-end gap-1">
+                                                <button className="p-2 text-[var(--secondary)] hover:bg-white hover:text-[var(--primary)] rounded-lg transition-all border border-transparent hover:border-[#eaecf0]"><History size={16} /></button>
+                                                <button className="p-2 text-[var(--secondary)] hover:bg-white hover:text-[var(--primary)] rounded-lg transition-all border border-transparent hover:border-[#eaecf0]"><Mail size={16} /></button>
+                                                <button className="p-2 text-rose-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-all border border-transparent hover:border-rose-100"><UserX size={16} /></button>
                                             </div>
-                                        </div>
-                                    </td>
-                                    <td className="py-4">
-                                        <p className="text-sm font-medium text-[var(--secondary)]">{student.class || 'General'}</p>
-                                        <p className="text-[10px] text-[#98a2b3]">Enrollment: {student.enrollment || '2024'}</p>
-                                    </td>
-                                    <td className="py-4 text-sm font-medium text-[var(--secondary)]">{student.email || `${student.student_id?.toLowerCase()}@univ.edu`}</td>
-                                    <td className="py-4">
-                                        <Badge status={student.status === 'Active' ? 'success' : student.status === 'Risk' ? 'error' : 'success'}>
-                                            {student.status || 'Active'}
-                                        </Badge>
-                                    </td>
-                                    <td className="py-4 text-right">
-                                        <div className="flex justify-end gap-1">
-                                            <button className="p-2 text-[var(--secondary)] hover:bg-white hover:text-[var(--primary)] rounded-lg transition-all border border-transparent hover:border-[#eaecf0]"><History size={16} /></button>
-                                            <button className="p-2 text-[var(--secondary)] hover:bg-white hover:text-[var(--primary)] rounded-lg transition-all border border-transparent hover:border-[#eaecf0]"><Mail size={16} /></button>
-                                            <button className="p-2 text-rose-500 hover:bg-rose-50 hover:text-rose-600 rounded-lg transition-all border border-transparent hover:border-rose-100"><UserX size={16} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            )) : (
+                                        </td>
+                                    </tr>
+                                )
+                            }) : (
                                 <tr>
                                     <td colSpan="5" className="py-10 text-center text-[var(--secondary)] text-sm">
                                         {isLoading ? 'Loading students...' : 'No students registered in the database.'}
@@ -120,7 +150,7 @@ export default function Students() {
                         </tbody>
                     </table>
                 </div>
-            </Card>
+            </EnterpriseCard>
         </div>
     );
 }
